@@ -9,7 +9,7 @@ import { EmbeddedWallet } from './embedded.service';
 import type {
   Address, TransactionUnspentOutput,
 } from '@mesh/core';
-import type { DataSignature } from '@mesh/common/types';
+import type { DataSignature, UTxO } from '@mesh/common/types';
 
 const DEFAULT_PASSWORD = 'MARI0TIME';
 
@@ -114,13 +114,16 @@ export class AppWallet implements IInitiator, ISigner, ISubmitter {
   }
 
   async signTx(
-    unsignedTx: string, partialSign = false, accountIndex = 0,
+    unsignedTx: string, partialSign = false, accountIndex = 0, inputUtxos: UTxO[] | undefined = undefined, signWithBaseAddress = false
   ): Promise<string> {
     try {
       const account = this._wallet
         .getAccount(accountIndex, DEFAULT_PASSWORD);
-      const utxos = await this._fetcher
-        .fetchAddressUTxOs(account.enterpriseAddress);
+
+      const utxos = inputUtxos ?? await this._fetcher
+        .fetchAddressUTxOs(signWithBaseAddress ? 
+          account.baseAddress :
+          account.enterpriseAddress);
 
       const newSignatures = this._wallet.signTx(
         accountIndex, DEFAULT_PASSWORD,
